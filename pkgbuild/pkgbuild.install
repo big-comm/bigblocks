@@ -9,10 +9,10 @@ cyan="\e[1;38;5;45m"         # Bold cyan
 white="\e[1;97m"             # Bold white
 reset="\e[0m"                # Reset text formatting
 
-# Print status messages - CHANGE 'PACKAGE_NAME' to your actual package name
+# Print status messages
 printMsg() {
     local message=$1
-    echo -e "${blueDark}[${lightBlue}PACKAGE_NAME${blueDark}]${reset} ${cyan}→${reset} ${white}${message}${reset}"
+    echo -e "${blueDark}[${lightBlue}bigblocks${blueDark}]${reset} ${cyan}→${reset} ${white}${message}${reset}"
 }
 
 # Function executed before package installation
@@ -26,18 +26,32 @@ printMsg() {
 # }
 
 # Function executed after package installation
-# post_install() {
-#     printMsg "Configuring the package after installation..."
-#     # Example: Create a configuration directory
-#     # mkdir -p /etc/mypackage
-#     # chmod 755 /etc/mypackage
-#     # printMsg "Created configuration directory"
-#
-#     # Example: Start a service
-#     # systemctl enable myservice.service
-#     # systemctl start myservice.service
-#     # printMsg "Service enabled and started"
-# }
+post_install() {
+    printMsg "Configuring the package after installation..."
+    
+    # Check for zip file and extract it
+    if [ -f "/opt/bigblocks/Big_Blocks-x86_64.zip" ]; then
+        printMsg "Found Big_Blocks-x86_64.zip, extracting (overwriting existing files)..."
+        cd /opt/bigblocks
+        
+        if command -v unzip &> /dev/null; then
+            # Force overwrite with -o flag, quiet with -q flag
+            unzip -o -q Big_Blocks-x86_64.zip
+            if [ $? -eq 0 ]; then
+                printMsg "Successfully extracted Big_Blocks-x86_64.zip"
+                printMsg "Removing zip file..."
+                rm -f Big_Blocks-x86_64.zip
+                printMsg "Zip file removed"
+            else
+                printMsg "Error: Failed to extract zip file"
+            fi
+        else
+            printMsg "Error: unzip command not found. Please install unzip package."
+        fi
+    else
+        printMsg "No Big_Blocks-x86_64.zip found in /opt/bigblocks/"
+    fi
+}
 
 # Function executed before package upgrade
 # pre_upgrade() {
@@ -48,18 +62,11 @@ printMsg() {
 # }
 
 # Function executed after package upgrade
-# post_upgrade() {
-#     printMsg "Finalizing package upgrade..."
-#     # Usually, post_install is called here to ensure
-#     # all post-installation configurations are applied
-#     # post_install
-#
-#     # Example: Check and update configuration files
-#     # if [ -f /etc/mypackage/config.conf.pacnew ]; then
-#     #     printMsg "New configuration file available. Please review /etc/mypackage/config.conf.pacnew"
-#     # fi
-#     # printMsg "Upgrade completed successfully"
-# }
+post_upgrade() {
+    printMsg "Finalizing package upgrade..."
+    # Call post_install to ensure all configurations are applied
+    post_install
+}
 
 # Function executed before package removal
 # pre_remove() {
