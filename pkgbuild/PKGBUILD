@@ -3,7 +3,7 @@
 pkgname=bigblocks
 pkgdesc="Fun and challenging block puzzle game with engaging gameplay"
 # Uncomment and edit the following lines as needed
-depends=('fuse2')
+depends=('qt6-declarative' 'qt6-tools')
 #makedepends=('')
 #optdepends=('')
 #conflicts=('')

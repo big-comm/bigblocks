@@ -1,3 +1,16 @@
-#!/bin/sh
+#!/bin/bash
+path="/usr/share/biglinux/bigblocks/BigBlocks.qml"
 
-exec /opt/bigblocks/Big_Blocks-x86_64.AppImage "$@"
+# Check if qml6 exists
+if ! command -v qml6 >/dev/null 2>&1; then
+    echo "Error: qml6 not found. Please install Qt6 QML runtime."
+    exit 1
+fi
+
+# Check if game file exists
+if [ ! -f "$path" ]; then
+    echo "Error: Game file not found: $path"
+    exit 1
+fi
+
+exec qml6 "$path" "$@"
