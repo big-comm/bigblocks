@@ -1,9 +1,9 @@
 # Maintainer: Tales A. Mendonça <talesam@gmail.com>
 
-pkgname=pkgbuild-template-translate
-pkgdesc="Package template for BigCommunity"
+pkgname=bigblocks
+pkgdesc="Fun and challenging block puzzle game with engaging gameplay"
 # Uncomment and edit the following lines as needed
-#depends=('')
+depends=('fuse2')
 #makedepends=('')
 #optdepends=('')
 #conflicts=('')
