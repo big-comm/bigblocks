@@ -32,14 +32,15 @@ Big Blocks is an innovative puzzle game that combines classic falling-block game
 ## Screenshots
 
 > Screenshots will be available soon. The game features a modern dark theme with colorful Linux distribution-themed blocks and smooth animations.
+<p align="center">
+  <img width="722" height="760" alt="bigblock_welcome" src="https://github.com/user-attachments/assets/5b697f7a-25c5-40ad-893d-b9c9eab465ad" />
+</p>
 
-<!-- 
-TODO: Add screenshots showing:
-- Main gameplay with different distro pieces
-- BigLinux Power meter and super mode
-- Game start screen with distro showcase
-- High scores display
--->
+<p align="center">
+  <img width="722" height="760" alt="bigblocks_game" src="https://github.com/user-attachments/assets/1a020d3d-cdac-4424-8794-4cc38ad66c35" />
+</p>
+
+
 
 ## Installation
 
