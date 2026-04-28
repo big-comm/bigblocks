@@ -1,16 +1,21 @@
 #!/bin/bash
-path="/usr/share/biglinux/bigblocks/BigBlocks.qml"
+QML_FILE="/usr/share/biglinux/bigblocks/BigBlocks.qml"
 
-# Check if qml6 exists
+# Check Qt6 QML runtime
 if ! command -v qml6 >/dev/null 2>&1; then
-    echo "Error: qml6 not found. Please install Qt6 QML runtime."
+    echo "Error: qml6 not found. Install qt6-declarative." >&2
     exit 1
 fi
 
-# Check if game file exists
-if [ ! -f "$path" ]; then
-    echo "Error: Game file not found: $path"
+# Check game file
+if [ ! -f "$QML_FILE" ]; then
+    echo "Error: game file not found: $QML_FILE" >&2
     exit 1
 fi
 
-exec qml6 "$path" "$@"
+# Default to XCB: stable across X11 and XWayland, and avoids segfaults
+# observed with some experimental Wayland GPU drivers (e.g. Intel Xe KMD).
+# Users can override with QT_QPA_PLATFORM=wayland if desired.
+export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"
+
+exec qml6 "$QML_FILE" "$@"

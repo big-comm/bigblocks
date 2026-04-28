@@ -11,7 +11,6 @@ Item {
     
     // Game constants
     readonly property string gameVersion: "1.0.0"
-    readonly property string gameName: "Big Blocks"
     readonly property int gridWidth: 10
     readonly property int gridHeight: 20
     readonly property int cellSize: Math.max(25, Math.min((height - 100) / gridHeight, 35))
@@ -29,8 +28,7 @@ Item {
     property bool gameRunning: false
     property bool gamePaused: false
     property bool gameOver: false
-    property real gameSpeed: 1.0
-    
+
     // Special powers
     property int bigLinuxPower: 0
     property int maxBigLinuxPower: 100
@@ -39,14 +37,12 @@ Item {
     
     // Grid data (0 = empty, 1-7 = different distro blocks)
     property var grid: []
-    property var gridColors: []
-    
+
     // Current piece
     property var currentPiece: null
     property int currentPieceType: 0
     property int currentX: 4
     property int currentY: 0
-    property int currentRotation: 0
     property int ghostY: 0
     
     // Next pieces queue
@@ -54,15 +50,6 @@ Item {
     property int holdPiece: -1
     property bool holdUsed: false
     
-    // Statistics
-    property var stats: ({
-        pieces: 0,
-        perfect: 0,
-        combos: 0,
-        maxCombo: 0,
-        superUses: 0
-    })
-
     // Session stats - persist during game
     property var sessionStats: ({
         pieces: 0,
@@ -102,10 +89,8 @@ Item {
     ]
     
     // Visual effects
-    property var particles: []
-    property var explosions: []
     property var floatingTexts: []
-    property bool hasActiveAnimations: particles.length > 0 || floatingTexts.length > 0
+    property bool hasActiveAnimations: floatingTexts.length > 0
 
     // Settings for persistence
     Settings {
@@ -158,9 +143,11 @@ Item {
                 height: 2
                 radius: 1
                 color: Qt.rgba(0.5, 0.7, 1, 0.25)
-                x: Math.random() * root.width
-                y: Math.random() * root.height
-                
+
+                Component.onCompleted: {
+                    x = Math.random() * root.width;
+                }
+
                 SequentialAnimation on y {
                     loops: Animation.Infinite
                     NumberAnimation {
@@ -330,29 +317,26 @@ Item {
                 }
             }
             
-            // Line clear animation
-            Rectangle {
-                id: lineClearEffect
-                width: parent.width
-                height: cellSize
-                color: "white"
-                opacity: 0
-                
-                SequentialAnimation {
-                    id: lineClearAnimation
-                    
-                    PropertyAnimation {
-                        target: lineClearEffect
-                        property: "opacity"
-                        to: 0.8
-                        duration: 100
+            // Line clear animation — one flash strip per row, triggered individually
+            Repeater {
+                id: lineClearEffects
+                model: gridHeight
+
+                Rectangle {
+                    width: gameBoard.width
+                    height: cellSize
+                    y: index * cellSize
+                    color: "white"
+                    opacity: 0
+
+                    SequentialAnimation on opacity {
+                        id: flashAnim
+                        running: false
+                        PropertyAnimation { to: 0.8; duration: 100 }
+                        PropertyAnimation { to: 0; duration: 300 }
                     }
-                    PropertyAnimation {
-                        target: lineClearEffect
-                        property: "opacity"
-                        to: 0
-                        duration: 300
-                    }
+
+                    function flash() { flashAnim.restart(); }
                 }
             }
         }
@@ -1178,7 +1162,7 @@ Item {
         interval: dropSpeed
         running: gameRunning && !gamePaused
         repeat: true
-        onTriggered: moveDownAuto()
+        onTriggered: moveDown()
     }
     
     // Animation timer (only active when needed)
@@ -1221,13 +1205,6 @@ Item {
         superModeActive = false;
         holdPiece = -1;
         holdUsed = false;
-        
-        // Reset stats
-        stats.pieces = 0;
-        stats.perfect = 0;
-        stats.combos = 0;
-        stats.maxCombo = 0;
-        stats.superUses = 0;
 
         // Reset session stats
         sessionStats.pieces = 0;
@@ -1249,6 +1226,10 @@ Item {
         gameOver = false;
     }
     
+    function calcDropSpeed(lvl) {
+        return Math.max(100, 1000 - (lvl - 1) * 100);
+    }
+
     function generateRandomPiece() {
         // Weighted random - BigLinux piece is rarer
         var weights = [15, 15, 15, 15, 15, 15, 5]; // BigLinux has lower weight
@@ -1273,8 +1254,7 @@ Item {
         });
         currentX = Math.floor((gridWidth - currentPiece[0].length) / 2);
         currentY = 0;
-        currentRotation = 0;
-        
+
         // Check if piece can spawn
         if (!isValidPosition(currentX, currentY, currentPiece)) {
             endGame();
@@ -1288,8 +1268,7 @@ Item {
         
         // Update ghost position
         updateGhostPosition();
-        
-        stats.pieces++;
+
         sessionStats.pieces++;
 
         // Force QML binding update for sessionStats
@@ -1320,17 +1299,7 @@ Item {
         }
     }
 
-    // Automatic movement
-    function moveDownAuto() {
-        if (isValidPosition(currentX, currentY + 1, currentPiece)) {
-            currentY++;
-            return true;
-        } else {
-            placePiece();
-            return false;
-        }
-    }
-    
+
     function hardDrop() {
         var dropped = 0;
         while (isValidPosition(currentX, currentY + 1, currentPiece)) {
@@ -1368,7 +1337,6 @@ Item {
                 currentPiece = rotated;
                 currentX += kicks[k].x;
                 currentY += kicks[k].y;
-                currentRotation = (currentRotation + 1) % 4;
                 updateGhostPosition();
                 break;
             }
@@ -1451,9 +1419,6 @@ Item {
             linesCleared += lines.length;
             combo++;
             
-            if (combo > stats.maxCombo) {
-                stats.maxCombo = combo;
-            }
             if (combo > sessionStats.maxCombo) {
                 sessionStats.maxCombo = combo;
                 // Force QML binding update for sessionStats
@@ -1473,7 +1438,6 @@ Item {
             // Check for perfect clear
             if (isGridEmpty()) {
                 score += 1000 * level;
-                stats.perfect++;
                 sessionStats.perfect++;
                 // Force QML binding update for sessionStats
                 sessionStats = Object.assign({}, sessionStats);
@@ -1486,7 +1450,7 @@ Item {
             // Level up
             if (linesCleared >= level * 10) {
                 level++;
-                dropSpeed = Math.max(100, 1000 - (level - 1) * 100);
+                dropSpeed = calcDropSpeed(level);
                 showFloatingText(gameBoard.x + gameBoard.width / 2,
                                gameBoard.y + gameBoard.height / 2,
                                "LEVEL UP!",
@@ -1526,17 +1490,16 @@ Item {
     }
     
     function clearLines(lines) {
-        // Animate line clear
+        // Animate every cleared line individually
         for (var i = 0; i < lines.length; i++) {
-            lineClearEffect.y = gameBoard.y + lines[i] * cellSize;
-            lineClearAnimation.start();
+            var rect = lineClearEffects.itemAt(lines[i]);
+            if (rect) rect.flash();
         }
-        
-        // Remove lines
-        for (var i = lines.length - 1; i >= 0; i--) {
-            grid.splice(lines[i], 1);
-            
-            // Add empty line at top
+
+        // Remove lines (top-down so indices stay valid)
+        for (var j = lines.length - 1; j >= 0; j--) {
+            grid.splice(lines[j], 1);
+
             var emptyLine = [];
             for (var x = 0; x < gridWidth; x++) {
                 emptyLine.push(0);
@@ -1569,7 +1532,6 @@ Item {
         bigLinuxPower = 0;
         superModeActive = true;
         superModeTime = 60; // ~3 seconds at ~20 FPS tick rate
-        stats.superUses++;
         sessionStats.superUses++;
         // Force QML binding update for sessionStats
         sessionStats = Object.assign({}, sessionStats);
@@ -1578,14 +1540,6 @@ Item {
         for (var i = 0; i < 3; i++) {
             for (var x = 0; x < gridWidth; x++) {
                 grid[gridHeight - 1 - i][x] = 0;
-            }
-        }
-        
-        // Add explosion effect
-        for (var y = gridHeight - 3; y < gridHeight; y++) {
-            for (var x = 0; x < gridWidth; x++) {
-                createExplosion(gameBoard.x + x * cellSize + cellSize / 2,
-                              gameBoard.y + y * cellSize + cellSize / 2);
             }
         }
         
@@ -1603,7 +1557,7 @@ Item {
     
     function endSuperMode() {
         superModeActive = false;
-        dropSpeed = Math.max(100, 1000 - (level - 1) * 100);
+        dropSpeed = calcDropSpeed(level);
     }
     
     function showFloatingText(x, y, text, color) {
@@ -1619,39 +1573,9 @@ Item {
         floatingTexts = floatingTexts.slice();
     }
     
-    function createExplosion(x, y) {
-        // Create particle explosion effect (reduced count)
-        for (var i = 0; i < 3; i++) {
-            particles.push({
-                x: x,
-                y: y,
-                vx: (Math.random() - 0.5) * 5,
-                vy: (Math.random() - 0.5) * 5,
-                color: "#FFD700",
-                size: Math.random() * 5 + 2,
-                life: 15
-            });
-        }
-    }
-    
     function updateAnimations() {
-        var particlesChanged = false;
         var textsChanged = false;
-        
-        // Update particles
-        for (var i = particles.length - 1; i >= 0; i--) {
-            var p = particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-            p.life--;
-            
-            if (p.life <= 0) {
-                particles.splice(i, 1);
-                particlesChanged = true;
-            }
-        }
-        
-        // Update floating texts
+
         for (var j = floatingTexts.length - 1; j >= 0; j--) {
             floatingTexts[j].time -= 3; // Compensate for lower tick rate
             floatingTexts[j].y -= 2;
@@ -1660,20 +1584,14 @@ Item {
                 textsChanged = true;
             }
         }
-        
-        // Only trigger binding updates when arrays actually changed
-        if (particlesChanged) particles = particles.slice();
+
         if (textsChanged) floatingTexts = floatingTexts.slice();
     }
     
     function endGame() {
         gameRunning = false;
         gameOver = true;
-        
-        console.log("DEBUG - EndGame - Current score:", score);
-        var madeTopFive = updateTopScores(score);
-        console.log("DEBUG - Made top 5:", madeTopFive);
-        
+        updateTopScores(score);
         gameOverScreen.visible = true;
     }
     
