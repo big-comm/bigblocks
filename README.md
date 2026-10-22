@@ -61,7 +61,7 @@ For other Arch Linux based distributions, you need to add the BigCommunity repos
 ```ini
 [community-stable]
 SigLevel = PackageRequired
-Server = https://repo.communitybig.org/stable/$arch
+Server = https://repo.communitybig.org/$repo/$arch
 ```
 
 2. Import the GPG keys:
